@@ -1,0 +1,223 @@
+{
+  "name": "Günlük Antalya Havadurumu",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "latitude",
+              "value": "36.8969"
+            },
+            {
+              "name": "longitude",
+              "value": "30.7133"
+            },
+            {
+              "name": "current",
+              "value": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code"
+            },
+            {
+              "name": "timezone",
+              "value": "Europe/Istanbul"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "503857c7-facb-4d48-9946-5816117e3c82",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst data = $input.first().json;\nconst current = data.current;\n\nconst weather = {\n  0: \"Açık ☀️\",\n  1: \"Az bulutlu 🌤️\",\n  2: \"Parçalı bulutlu ⛅\",\n  3: \"Kapalı ☁️\",\n  45: \"Sisli 🌫️\",\n  48: \"Sisli 🌫️\",\n  51: \"Hafif çisenti 🌦️\",\n  61: \"Yağmurlu 🌧️\",\n  63: \"Yağmurlu 🌧️\",\n  65: \"Kuvvetli yağmur 🌧️\",\n  71: \"Kar yağışlı ❄️\",\n  80: \"Sağanak yağış 🌧️\",\n  95: \"Gök gürültülü fırtına ⛈️\"\n};\n\nconst message = `\n🌤️ ANTALYA HAVA DURUMU\n\n🌡️ Sıcaklık: ${current.temperature_2m}°C\n🤔 Hissedilen: ${current.apparent_temperature}°C\n💧 Nem: %${current.relative_humidity_2m}\n\n☁️ Durum: ${weather[current.weather_code] || \"Değişken\"}\n\n📅 Günlük hava durumu bildirimi\n`;\n\nreturn [{ json: { message } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "275df790-7cbe-4120-b575-24f1ce6451f7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1e599be7-3684-40f7-ac0f-9ca8afc3cbb6",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "5407148176",
+        "text": "={{$json.message}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "be14c4c2-e330-4d8f-8889-8e9b733af524",
+      "name": "Send a text message",
+      "webhookId": "6f28f98b-343c-41ad-8e67-4ab5f6937b6c",
+      "credentials": {
+        "telegramApi": {
+          "id": "D0DW1OxmGhHWJic3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -32,
+        160
+      ],
+      "id": "f71f45cc-cca2-4634-8a45-45f6df45c490",
+      "name": "Telegram Trigger",
+      "webhookId": "b263e488-e35f-468c-bcad-7af960b6e1a1",
+      "credentials": {
+        "telegramApi": {
+          "id": "D0DW1OxmGhHWJic3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "721dfcc7-f41d-4448-9a9a-bd7a307adb08",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "hava durumu",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        112,
+        160
+      ],
+      "id": "75a2b31f-1fb8-49e4-ae26-975cb38b7cad",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "f45ab5f9-283c-49c5-a7b6-e7e1b715731a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6ca7b447cf1e89d197faeb2ba319bdbcb40c60671c156f8de3d2e14be1ad8687"
+  },
+  "nodeGroups": [],
+  "id": "7oK1qZ6kSzVaZltp",
+  "tags": []
+}
